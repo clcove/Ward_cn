@@ -223,30 +223,52 @@ public class InfoService
         return input;
     }
     /**
-     * Gets storage information
+     * 读取存储信息
      *
-     * @return StorageDto with filled fields
+     * @return GraphicsDto with filled fields
      */
     private StorageDto getStorage(HardwareAbstractionLayer hardware)
     {
         StorageDto storageDto = new StorageDto();
         List<HWDiskStore> hwDiskStores = hardware.getDiskStores();
 
-    // Retrieve main storage model
+        // 硬盘名称
         String mainStorage = hwDiskStores.isEmpty() ? "Undefined"
             : hwDiskStores.get(0).getModel().replaceAll("\\(.+?\\)", "").trim();
         storageDto.setMainStorage(mainStorage);
 
-    long total = hwDiskStores.stream().mapToLong(HWDiskStore::getSize).sum();
+        //存储总大小
+        long total = hwDiskStores.stream().mapToLong(HWDiskStore::getSize).sum();
         storageDto.setTotal(getConvertedCapacity(total) + " Total");
 
+        //硬盘总数
         int diskCount = hwDiskStores.size();
         storageDto.setDiskCount(diskCount + (diskCount > 1 ? " Disks" : " Disk"));
 
-
+        //存储空间占用
+        storageDto.setUsage(getStorageUsage(hardware));
         return storageDto;
     }
+    /**
+     * 读取硬盘信息
+     *
+     * @return GraphicsDto with filled fields
+     */
+    private List<HardDiskDto> getHardDisk(HardwareAbstractionLayer hardware)
+    {
+        List<HardDiskDto> hardDiskDtos = new ArrayList<>();
+        List<HWDiskStore> hwDiskStores = hardware.getDiskStores();
 
+        hwDiskStores.forEach(hwDiskStore -> {
+            HardDiskDto hardDiskDto = new HardDiskDto();
+            hardDiskDto.setName(hwDiskStore.getName());
+            hardDiskDto.setTemp(hwDiskStore.getModel());
+            hardDiskDto.setTotal(getConvertedCapacity(hwDiskStore.getSize()));
+            hardDiskDto.setReadAndWrite(String.valueOf(hwDiskStore.getReads()) + String.valueOf(hwDiskStore.getWrites()));
+            hardDiskDtos.add(hardDiskDto);
+        });
+        return hardDiskDtos;
+    }
     /**
      * Used to deliver dto to corresponding controller
      *
@@ -266,7 +288,8 @@ public class InfoService
             infoDto.setGraphics(getGraphics(hardware));
             //存储信息
             infoDto.setStorage(getStorage(hardware));
-
+            //存储信息
+            infoDto.setHardDisks(getHardDisk(hardware));
             return infoDto;
         }
         else
@@ -324,7 +347,7 @@ public class InfoService
     }
 
     /**
-     * 存储空间总占用
+     * 存储空间总空间
      *
      * @return int that display storage usage
      */

@@ -14,9 +14,14 @@ import lombok.Setter;
 public class HardDiskDto
 {
     /**
-     *  硬盘型号字段
+     *  名称
      */
-    private String mainStorage;
+    private String name;
+
+    /**
+     * 硬盘型号
+     */
+    private String model;
 
     /**
      * 硬盘大小
