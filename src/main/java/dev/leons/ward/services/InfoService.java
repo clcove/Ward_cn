@@ -15,9 +15,14 @@ import oshi.util.ExecutingCommand;
 import oshi.util.FileUtil;
 import oshi.util.Util;
 
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * InfoService provides various information about machine, such as processor name, core count, Ram amount, etc.
@@ -71,20 +76,20 @@ public class InfoService
      */
     private String getConvertedCapacity(final long bits)
     {
-        if ((bits / 1.049E+6) > 999)
-        {
-            if ((bits / 1.074E+9) > 999)
-            {
-                return (Math.round((bits / 1.1E+12) * 10.0) / 10.0) + " TiB";
+        DecimalFormat df = new DecimalFormat("#.##"); // 最多保留两位小数，并去掉末尾的0
+        df.setDecimalSeparatorAlwaysShown(false); // 不显示多余的小数点
+
+        if ((bits / 1.049E+6) > 999) {
+            if ((bits / 1.074E+9) > 999) {
+                double value = Math.ceil((bits / 1.1E+12) * 10.0) / 10.0;
+                return df.format(value) + " TB";
+            } else {
+                long value = (long) Math.ceil(bits / 1.074E+9);
+                return df.format(value) + " GB";
             }
-            else
-            {
-                return Math.round(bits / 1.074E+9) + " GiB";
-            }
-        }
-        else
-        {
-            return Math.round(bits / 1.049E+6) + " MiB";
+        } else {
+            long value = (long) Math.ceil(bits / 1.049E+6);
+            return df.format(value) + " MB";
         }
     }
 
@@ -97,8 +102,7 @@ public class InfoService
         ProcessorDto processorDto = new ProcessorDto();
         //cpu 信息
         CentralProcessor centralProcessor = hardware.getProcessor();
-        //传感器信息
-        Sensors sensors = hardware.getSensors();
+
         // cpu型号
         String name = centralProcessor.getProcessorIdentifier().getName().split("@")[0].trim();
         processorDto.setName(name);
@@ -117,8 +121,35 @@ public class InfoService
         processorDto.setUsage(getProcessorUsage(hardware));
 
         //cpu温度
-        processorDto.setTemp(Math.round(sensors.getCpuTemperature()) + "°C");
+        processorDto.setTemp(getProcessorTemp() + "°C");
         return processorDto;
+    }
+
+    /**
+     * 读取CPU温度
+     *
+     * @return
+     */
+    private String getProcessorTemp(){
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+        String processorTemp = null;
+        if (os.getFamily().contains("Linux")) {
+            List<String> gemObjects = ExecutingCommand.runNative("sudo cat /sys/class/thermal/thermal_zone3/temp");
+            System.out.println("GPU频率查询输出"+gemObjects.size());
+            for (String line : gemObjects) {
+                System.out.println("GPU频率查询输出"+line);
+                double temp = Integer.parseInt(line)/1000.0;
+                processorTemp = String.valueOf(temp);
+            }
+
+        } else if (os.getFamily().contains("Windows")) {
+            // Windows系统实现
+            System.out.println("读取CPU温度:不支持的操作系统"+os.getFamily());
+        } else {
+            System.out.println("读取CPU温度:不支持的操作系统"+os.getFamily());
+        }
+        return processorTemp;
     }
 
     /**
@@ -154,7 +185,7 @@ public class InfoService
     }
 
     /**
-     * 读取内存信息
+     * 读取gpu信息
      *
      * @return GraphicsDto with filled fields
      */
@@ -166,29 +197,31 @@ public class InfoService
         List<GraphicsCard> gpus = hardware.getGraphicsCards();
         GraphicsCard gpu = gpus.get(0);
         //gpu型号
-        graphicsDto.setName(gpu.getName());
+        graphicsDto.setName(extractFirstOrSelf(gpu.getName()));
         //显存大小
         graphicsDto.setMemory(getConvertedCapacity(gpu.getVRam()));
 
         //显存占用
-        graphicsDto.setMemoryUsage(Math.round(gpu.getVRam() * 100.0 / gpu.getVRam()) + "%");
+        graphicsDto.setMemoryUsage(getConvertedCapacity(getGraphicsMemoryUsage()));
 
         //gpu占用
-        graphicsDto.setUsage(23);
+        graphicsDto.setUsage(getGraphicsUsage());
 
         //gpu频率
-        graphicsDto.setClockSpeed("112");
-        // 2. 获取详细使用情况（平台特定）
-        if (os.getFamily().contains("Windows")) {
-            getWindowsGpuDetails();
-        } else if (os.getFamily().equals("Linux")) {
-            getLinuxGpuDetails();
-        } else {
-            System.out.println("不支持的操作系统");
-        }
+        graphicsDto.setClockSpeed(getGpuDetailsFrequency());
         return graphicsDto;
     }
 
+
+    public  String extractFirstOrSelf(String input) {
+        int start = input.indexOf('[');
+        int end = input.indexOf(']');
+
+        if (start != -1 && end != -1 && start < end) {
+            return input.substring(start + 1, end);
+        }
+        return input;
+    }
     /**
      * Gets storage information
      *
@@ -324,22 +357,15 @@ public class InfoService
         SystemInfo si = new SystemInfo();
         OperatingSystem os = si.getOperatingSystem();
         String ramFrequency = null;
-        if (os.getFamily().equals("Linux")) {
+        if (os.getFamily().contains("Linux")) {
             // 方法1: 使用dmidecode
             List<String> dmidecodeOutput = ExecutingCommand.runNative("sudo dmidecode --type memory");
             for (String line : dmidecodeOutput) {
                 if (line.contains("Speed:") && !line.contains("Unknown")) {
-                    ramFrequency = line.trim() + " MHz";
+                    ramFrequency = line.trim().replaceAll("[^0-9]", "") + " MHz";
                 }
             }
 
-            // // 方法2: 使用lshw
-            // List<String> lshwOutput = ExecutingCommand.runNative("sudo lshw -C memory");
-            // for (String line : lshwOutput) {
-            //     if (line.contains("clock:") || line.contains("speed:")) {
-            //         ramFrequency = line.trim() + "MHz";
-            //     }
-            // }
         } else if (os.getFamily().contains("Windows")) {
             // Windows系统实现
             List<String> wmicOutput = ExecutingCommand.runNative("wmic memorychip get speed");
@@ -349,77 +375,114 @@ public class InfoService
                 }
             }
         } else {
-            System.out.println("内存频率读取:不支持的操作系统");
+            System.out.println("内存频率读取:不支持的操作系统"+os.getFamily());
         }
         return ramFrequency;
     }
 
-    private static void getWindowsGpuDetails() {
-        // 1. 获取显存大小
-        List<String> vramInfo = ExecutingCommand.runNative(
-                "wmic path Win32_VideoController where \"AdapterCompatibility like '%Intel%'\" get AdapterRAM /value");
-        vramInfo.stream()
-                .filter(line -> line.startsWith("AdapterRAM"))
-                .findFirst()
-                .ifPresent(System.out::println);
+    /**
+     * 读取GPU频率
+     *
+     * @return 320 MHz
+     */
+    private String getGpuDetailsFrequency(){
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+        String ramFrequency = null;
+        if (os.getFamily().contains("Linux")) {
+            // 方法1:
+            List<String> gemObjects = ExecutingCommand.runNative("cat /sys/kernel/debug/dri/0/i915_frequency_info | grep \"Actual freq\"");
+            for (String line : gemObjects) {
+//                System.out.println("GPU频率查询输出"+line);
+                if (line.contains("Actual")) {
+                    ramFrequency = line.trim().replaceAll("[^0-9]", "") + " MHz";
+                }
+            }
 
-        // 2. 获取GPU负载（需要管理员权限）
-        List<String> gpuLoad = ExecutingCommand.runNative(
-                "wmic path Win32_PerfFormattedData_Counters_GPUEngine where \"Name like '%%eng%%_3D%%'\" get UtilizationPercentage /value");
-        System.out.println("GPU负载: " + (gpuLoad.isEmpty() ? "N/A" : gpuLoad.get(0)));
-
-        // 3. 获取显存占用（近似值）
-        List<String> memUsage = ExecutingCommand.runNative(
-                "wmic path Win32_VideoController where \"AdapterCompatibility like '%Intel%'\" get CurrentHorizontalResolution,CurrentVerticalResolution,VideoMemoryType /value");
-        memUsage.forEach(System.out::println);
-
-        // 4. 获取GPU频率（Windows不支持直接查询Intel核显频率）
-        System.out.println("注意: Windows下无法直接获取Intel核显频率");
-        // 简化示例：实际使用时需要解析WMIC输出
-        List<String> result = ExecutingCommand.runNative(
-                "wmic path Win32_VideoController get AdapterRAM,CurrentHorizontalResolution,CurrentVerticalResolution /format:list");
-        result.forEach(System.out::println);
-    }
-
-    private static void getLinuxGpuDetails() {
-        // 1. 检查是否安装了intel-gpu-tools
-        boolean hasIntelGpuTop = !ExecutingCommand.runNative("which intel_gpu_top").isEmpty();
-
-        // 2. 获取显存信息
-        List<String> memInfo = FileUtil.readFile("/proc/meminfo");
-        long totalMem = memInfo.stream()
-                .filter(line -> line.startsWith("MemTotal"))
-                .map(line -> line.replaceAll("\\D+", ""))
-                .findFirst()
-                .map(Long::parseLong)
-                .orElse(0L);
-
-        // Intel核显通常共享系统内存，显存=预分配+动态共享
-        List<String> gttInfo = FileUtil.readFile("/sys/kernel/debug/dri/0/i915_gem_gtt");
-        System.out.printf("总系统内存: %d MB%n", totalMem / 1024);
-        gttInfo.stream()
-                .filter(line -> line.contains("Memory"))
-                .findFirst()
-                .ifPresent(System.out::println);
-
-        // 3. 获取GPU负载和频率
-        if (hasIntelGpuTop) {
-            List<String> gpuStats = ExecutingCommand.runNative("sudo intel_gpu_top -l 1 -o -");
-            gpuStats.stream()
-                    .filter(line -> line.contains("GPU busy") || line.contains("MHz"))
-                    .forEach(System.out::println);
+        } else if (os.getFamily().contains("Windows")) {
+            // Windows系统实现
+            System.out.println("读取GPU频率:不支持的操作系统"+os.getFamily());
         } else {
-            // 备用方法：从sysfs读取
-            List<String> freqInfo = FileUtil.readFile("/sys/class/drm/card0/device/gt_cur_freq_mhz");
-            if (!freqInfo.isEmpty()) {
-                System.out.println("GPU当前频率: " + freqInfo.get(0) + " MHz");
+            System.out.println("读取GPU频率:不支持的操作系统"+os.getFamily());
+        }
+        return ramFrequency;
+    }
+
+    /**
+     * 读取GPU显存占用
+     *
+     * @return 350 MHz
+     */
+    private long getGraphicsMemoryUsage(){
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+        long ramFrequency = 0;
+        if (os.getFamily().contains("Linux")) {
+            // 方法1:
+            List<String> gemObjects = ExecutingCommand.runNative("cat /sys/kernel/debug/dri/0/i915_gem_objects");
+            for (String line : gemObjects) {
+//                System.out.println("GPU频率查询输出"+line);
+                if (line.contains("shrinkable")) {
+                    String[] parts = line.split(",");
+                    if (parts.length > 1) {
+                        // 提取 "212799488 bytes" 中的数字
+                        String bytesPart = parts[1].trim(); // 去除前后空格
+                        String bytesStr = bytesPart.split("\\s+")[0]; // 按空格分割取第一个词
+                        ramFrequency = Long.parseLong(bytesStr);
+                    }
+                }
             }
 
-            List<String> loadInfo = FileUtil.readFile("/sys/class/drm/card0/device/gpu_busy_percent");
-            if (!loadInfo.isEmpty()) {
-                System.out.println("GPU负载: " + loadInfo.get(0) + "%");
-            }
-            System.out.println("注意: Linux下无法直接获取Intel核显频率");
+        } else if (os.getFamily().contains("Windows")) {
+            // Windows系统实现
+            System.out.println("读取GPU显存占用:不支持的操作系统"+os.getFamily());
+        } else {
+            System.out.println("读取GPU显存占用:不支持的操作系统"+os.getFamily());
         }
+        return ramFrequency;
     }
+
+    /**
+     * 读取GPU占用
+     *
+     * @return 350 MHz
+     */
+    private int getGraphicsUsage(){
+        SystemInfo si = new SystemInfo();
+        OperatingSystem os = si.getOperatingSystem();
+        int ramFrequency = 10;
+        if (os.getFamily().contains("Linux")) {
+            // 方法1:
+            List<String> gemObjects = ExecutingCommand.runNative("sudo timeout 0.05 intel_gpu_top -l -s 1");
+            for (String line : gemObjects) {
+//                System.out.println("GPU占用查询输出"+line);
+                if (!line.contains("Freq")&& !line.contains("req")) {
+                    // 1. 提取所有两位小数
+                    List<Double> decimals = new ArrayList<>();
+                    Matcher matcher = Pattern.compile("\\d+\\.\\d{2}").matcher(line);
+                    while (matcher.find()) {
+                        decimals.add(Double.parseDouble(matcher.group()));
+                    }
+
+                    // 2. 取最后4个并四舍五入
+                    List<Integer> rounded = decimals.stream()
+                            .skip(Math.max(0, decimals.size() - 4))
+                            .map(d -> (int) Math.round(d))
+                            .collect(Collectors.toList());
+
+                    // 3. 找出最大值
+                    ramFrequency = rounded.stream().max(Integer::compare).orElse(0);
+                }
+            }
+
+        } else if (os.getFamily().contains("Windows")) {
+            // Windows系统实现
+            System.out.println("读取GPU占用:不支持的操作系统"+os.getFamily());
+        } else {
+            System.out.println("读取GPU占用:不支持的操作系统"+os.getFamily());
+        }
+        return ramFrequency;
+    }
+
+
 }
