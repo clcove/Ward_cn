@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
+import oshi.hardware.HardwareAbstractionLayer;
 import oshi.software.os.FileSystem;
 import oshi.software.os.OSFileStore;
 import oshi.util.Util;
@@ -35,8 +36,8 @@ public class UsageService
      *
      * @return int that display processor usage
      */
-    private int getProcessor() {
-        CentralProcessor centralProcessor = systemInfo.getHardware().getProcessor();
+    private int getProcessor(HardwareAbstractionLayer hardware) {
+        CentralProcessor centralProcessor = hardware.getProcessor();
         long[] prevTicksArray = centralProcessor.getSystemCpuLoadTicks();
         long prevTotalTicks = Arrays.stream(prevTicksArray).sum();
         long prevIdleTicks = prevTicksArray[CentralProcessor.TickType.IDLE.getIndex()];
@@ -64,8 +65,8 @@ public class UsageService
      *
      * @return int that display ram usage
      */
-    private int getRam() {
-        GlobalMemory globalMemory = systemInfo.getHardware().getMemory();
+    private int getRam(HardwareAbstractionLayer hardware) {
+        GlobalMemory globalMemory = hardware.getMemory();
         long totalMemory = globalMemory.getTotal();
         long availableMemory = globalMemory.getAvailable();
 
@@ -83,7 +84,7 @@ public class UsageService
      *
      * @return int that display storage usage
      */
-    private int getStorage() {
+    private int getStorage(HardwareAbstractionLayer hardware) {
         FileSystem fileSystem = systemInfo.getOperatingSystem().getFileSystem();
 
         // Calculate total storage and free storage for all drives
@@ -113,10 +114,10 @@ public class UsageService
         if (!Ward.isFirstLaunch())
         {
             UsageDto usageDto = new UsageDto();
-
-            usageDto.setProcessor(getProcessor());
-            usageDto.setRam(getRam());
-            usageDto.setStorage(getStorage());
+            HardwareAbstractionLayer hardware = systemInfo.getHardware();
+            usageDto.setProcessor(getProcessor(hardware));
+            usageDto.setRam(getRam(hardware));
+            usageDto.setStorage(getStorage(hardware));
 
             return usageDto;
         }

@@ -3,8 +3,10 @@ package dev.leons.ward.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
- * InfoDto is a container for other info objects
+ * InfoDto 是其他信息对象的容器
  *
  * @author Rudolf Barbu
  * @version 1.0.1
@@ -14,17 +16,27 @@ import lombok.Setter;
 public class InfoDto
 {
     /**
-     *  Processor info dto field
+     * 处理器信息 dto 字段
      */
     private ProcessorDto processor;
 
     /**
-     *  machine info dto field
+     *  内存信息 dto 字段
      */
     private MachineDto machine;
 
     /**
-     *  Storage info dto field
+     * gpu信息 dto 字段
+     */
+    private GraphicsDto graphics;
+
+    /**
+     *  存储信息 dto 字段
      */
     private StorageDto storage;
+
+    /**
+     *  存储信息 dto 字段
+     */
+    private List<HardDiskDto> hardDisks;
 }

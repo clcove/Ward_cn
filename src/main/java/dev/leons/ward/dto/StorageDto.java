@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * StorageDto is a values container for presenting storage principal information
+ * StorageDto 是用于显示存储主体信息的值容器
  *
  * @author Rudolf Barbu
  * @version 1.0.0
@@ -14,22 +14,27 @@ import lombok.Setter;
 public class StorageDto
 {
     /**
-     * Host0 storage name field
+     * Host0 存储名称字段
      */
     private String mainStorage;
 
     /**
-     * Amount of total installed storage field
+     * 存储总量
      */
     private String total;
 
     /**
-     * Disk count field
+     * 存储总占用率
+     */
+    private int usage;
+
+    /**
+     * 磁盘总数字段
      */
     private String diskCount;
 
     /**
-     * Total amount of virtual memory (Swap on Linux) field
+     * 总读写
      */
-    private String swapAmount;
+    private String readAndWrite;
 }

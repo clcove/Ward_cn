@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * ErrorDto is a container for error response
+ * ErrorDto 是错误响应的容器
  *
  * @author Rudolf Barbu
  * @version 1.0.1
@@ -14,22 +14,22 @@ import java.time.LocalDateTime;
 public final class ErrorDto
 {
     /**
-     *  Error timestamp field
+     *  错误时间戳字段
      */
     private final String timestamp = LocalDateTime.now().toString();
 
     /**
-     *  Error message field
+     *  错误消息字段
      */
     private final String errMessage;
 
     /**
-     *  Exception name field
+     *  异常名称字段
      */
     private final String exceptionName;
 
     /**
-     * Setter for errMessage and exceptionName fields
+     * errMessage 和 exceptionName 字段的 Setter
      *
      * @param exception thrown exception
      */

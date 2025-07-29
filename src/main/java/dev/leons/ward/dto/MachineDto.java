@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * MachineDto is a values container for presenting machine principal information
+ * MachineDto 是一个值容器，用于显示机器主体信息
  *
  * @author Rudolf Barbu
  * @version 1.0.0
@@ -13,23 +13,29 @@ import lombok.Setter;
 @Setter
 public class MachineDto
 {
-    /**
-     * OS info field
-     */
-    private String operatingSystem;
 
     /**
-     * Amount of total installed ram field
+     * 总安装的 内存大小
      */
     private String totalRam;
 
     /**
-     * Ram generation field
+     * 内存频率
+     */
+    private String clockSpeed;
+
+    /**
+     * 内存代数字段
      */
     private String ramTypeOrOSBitDepth;
 
     /**
-     * Processes count field
+     * 内存占用率
      */
-    private String procCount;
+    private int usage;
+
+    /**
+     * 虚拟内存总量（Linux 上的交换）字段
+     */
+    private String swapAmount;
 }

@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * UsageDto is a values container for presenting server usage
+ * UsageDto 是一个值容器，用于显示服务器使用情况
  *
  * @author Rudolf Barbu
  * @version 1.0.1
@@ -14,17 +14,17 @@ import lombok.Setter;
 public class UsageDto
 {
     /**
-     * Processor usage field
+     * 处理器使用情况字段
      */
     private int processor;
 
     /**
-     * Ram usage field
+     * 内存使用字段
      */
     private int ram;
 
     /**
-     * Storage usage field
+     * 存储使用情况字段
      */
     private int storage;
 }

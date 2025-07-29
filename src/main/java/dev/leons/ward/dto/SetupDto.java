@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * SetupDto is a values container for setup data
+ * SetupDto 是设置数据的值容器
  *
  * @author Rudolf Barbu
  * @version 1.0.3
@@ -20,14 +20,14 @@ import lombok.Setter;
 public class SetupDto
 {
     /**
-     * Server name Field
+     * 服务器名称字段
      */
     @NotNull
     @Size(min = 0, max = 10)
     private String serverName;
 
     /**
-     * Theme name field
+     * 主题名称字段
      */
     @NotNull
     @NotEmpty
@@ -35,7 +35,7 @@ public class SetupDto
     private String theme;
 
     /**
-     * Port port field
+     * 端口端口字段
      */
     @NotNull
     @NotEmpty
@@ -44,7 +44,7 @@ public class SetupDto
     private String port;
 
     /**
-     * Enable fog field
+     * 启用雾场
      */
     @NotNull
     @NotEmpty
@@ -52,7 +52,7 @@ public class SetupDto
     private String enableFog;
 
     /**
-     * Background Color field
+     * 背景颜色字段
      */
     @NotEmpty
     @Pattern(regexp = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$|default")

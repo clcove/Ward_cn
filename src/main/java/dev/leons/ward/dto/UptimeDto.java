@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * UptimeDto is a values container for presenting uptime principal information
+ * UptimeDto 是一个值容器，用于显示正常运行时间主体信息
  *
  * @author Rudolf Barbu
  * @version 1.0.0
@@ -14,22 +14,22 @@ import lombok.Setter;
 public class UptimeDto
 {
     /**
-     * Uptime days field
+     * 已运行天数
      */
     private String days;
 
     /**
-     * Uptime hours field
+     * 已运行小时数
      */
     private String hours;
 
     /**
-     * Uptime minutes field
+     * 已运行分钟数
      */
     private String minutes;
 
     /**
-     * Uptime seconds field
+     * 已运行秒数
      */
     private String seconds;
 }

@@ -34,7 +34,7 @@
                                 <img class = "hardware-icon" th:src = "@{/img/icons/processor.png}" />
                             </div>
                             <div class = "label-hw-info">
-                                <div class = "hw-type">Processor</div>
+                                <div class = "hw-type">CPU</div>
                                 <div class = "hw-name" th:text = "${info.processor.name}"></div>
                             </div>
                         </div>
@@ -56,7 +56,7 @@
                             <div class = "detailed-hw-info">
                                 <div class = "first" th:text = "${info.processor.coreCount}"></div>
                                 <div id = "currentClockSpeed" class = "second" th:text = "${info.processor.clockSpeed}"></div>
-                                <div class = "third" th:text = "${info.processor.bitDepth}"></div>
+                                <div class = "third" th:text = "${info.processor.temp}"></div>
                             </div>
                             <div class = "dividers">
                                 <div class = "first"></div>
@@ -72,8 +72,8 @@
                                 <img class = "hardware-icon" th:src = "@{/img/icons/memory.png}" />
                             </div>
                             <div class = "label-hw-info">
-                                <div class = "hw-type">Memory</div>
-                                <div class = "hw-name" th:text = "${info.machine.operatingSystem}"></div>
+                                <div class = "hw-type">内存</div>
+                                <div class = "hw-name" th:text = "${info.machine.ramTypeOrOSBitDepth}"></div>
 
                             </div>
                         </div>
@@ -94,8 +94,46 @@
                         <div class = "footer second">
                             <div class = "detailed-hw-info">
                                 <div class = "first" th:text = "${info.machine.totalRam}"></div>
-                                <div class = "second" th:text = "${info.machine.ramTypeOrOSBitDepth}"></div>
-                                <div id = "currentProcCount" class = "third" th:text = "${info.machine.procCount}"></div>
+                                <div class = "second" th:text = "${info.machine.clockSpeed}"></div>
+                                <div id = "currentProcCount" class = "third" th:text = "${info.machine.swapAmount}"></div>
+                            </div>
+                            <div class = "dividers">
+                                <div class = "first"></div>
+                                <div class = "second"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class = "col-sm-12 col-md-6 col-lg-6 col-xl-4 px-3">
+                    <div class = "card">
+                        <div class = "header">
+                            <div class = "hw-logo first">
+                                <img class = "hardware-icon" th:src = "@{/img/icons/processor.png}" />
+                            </div>
+                            <div class = "label-hw-info">
+                                <div class = "hw-type">GPU</div>
+                                <div class = "hw-name" th:text = "${info.graphics.name}"></div>
+                            </div>
+                        </div>
+                        <div class = "usage">
+                            <div class = "main-hw-info">
+                                <div class = "hw-usage">
+                                    <div class = "usage-value">
+                                        <span id = "processor-hundreds1" class = "first">0</span>
+                                        <span id = "processor-tens1" class = "second">0</span>
+                                        <span id = "processor-ones1" class = "third">0</span>
+                                    </div>
+                                    <div class = "usage-postfix">%</div>
+                                </div>
+                                <p class = "info-label">PROCESSOR USAGE</p>
+                                <div class = "usage-underline first"></div>
+                            </div>
+                        </div>
+                        <div class = "footer first">
+                            <div class = "detailed-hw-info">
+                                <div class = "first" th:text = "${info.graphics.memory}"></div>
+                                <div id = "currentClockSpeed1" class = "second" th:text = "${info.graphics.memoryUsage}"></div>
+                                <div class = "third" th:text = "${info.graphics.clockSpeed}"></div>
                             </div>
                             <div class = "dividers">
                                 <div class = "first"></div>
@@ -111,7 +149,7 @@
                                 <img class = "hardware-icon" th:src = "@{/img/icons/disk.png}" />
                             </div>
                             <div class = "label-hw-info">
-                                <div class = "hw-type">Storage</div>
+                                <div class = "hw-type">存储</div>
                              <div class = "hw-name" th:text = "${info.storage.mainStorage}"></div>
                             </div>
                         </div>
@@ -133,7 +171,7 @@
                             <div class = "detailed-hw-info">
                                 <div id = "currentTotalStorage" class = "first" th:text = "${info.storage.total}"></div>
                                 <div id = "currentDiskCount" class = "second" th:text = "${info.storage.diskCount}"></div>
-                                <div class = "third" th:text = "${info.storage.swapAmount}"></div>
+                                <div class = "third" th:text = "${info.storage.diskCount}"></div>
                             </div>
                             <div class = "dividers">
                                 <div class = "first"></div>

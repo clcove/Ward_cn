@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * ProcessorDto is a values container for presenting processor principal information
+ * ProcessorDto 是一个值容器，用于显示处理器主体信息
  *
  * @author Rudolf Barbu
  * @version 1.0.0
@@ -14,22 +14,29 @@ import lombok.Setter;
 public class ProcessorDto
 {
     /**
-     * Processor name field
+     * 处理器名称字段
      */
     private String name;
 
     /**
-     * Core count field
+     * 核心线程数字段
+     * 8c/16t
      */
     private String coreCount;
 
     /**
-     * Processor max frequency field
+     * 处理器频率
      */
     private String clockSpeed;
 
     /**
-     * Processor architecture field
+     * 处理器占用率
      */
-    private String bitDepth;
+    private int usage;
+
+    /**
+     * 处理器温度
+     */
+    private String temp;
+
 }

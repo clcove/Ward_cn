@@ -3,7 +3,7 @@ package dev.leons.ward.dto;
 import lombok.Getter;
 
 /**
- * ResponseDto is a values container for presenting response info
+ * ResponseDto 是一个用于呈现响应信息的值容器
  *
  * @author Rudolf Barbu
  * @version 1.0.0
@@ -12,12 +12,12 @@ import lombok.Getter;
 public final class ResponseDto
 {
     /**
-     * Response message field
+     * 响应消息字段
      */
     private final String message;
 
     /**
-     * Setter for message field
+     * 消息字段的 Setter
      *
      * @param message message to display
      */
