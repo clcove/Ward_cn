@@ -24,6 +24,11 @@ public class HardDiskDto
     private String model;
 
     /**
+     * 硬盘序列号
+     */
+    private String serial;
+
+    /**
      * 硬盘大小
      */
     private String total;
@@ -34,9 +39,14 @@ public class HardDiskDto
     private int usage;
 
     /**
-     * 硬盘读写
+     * 硬盘读取
      */
-    private String readAndWrite;
+    private String read;
+
+    /**
+     * 硬盘写入
+     */
+    private String write;
 
     /**
      * 硬盘所属存储空间

@@ -39,4 +39,9 @@ public class InfoDto
      *  存储信息 dto 字段
      */
     private List<HardDiskDto> hardDisks;
+
+    /**
+     *  网络信息 dto 字段
+     */
+    private List<NetworkDto> networks;
 }

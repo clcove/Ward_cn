@@ -39,59 +39,38 @@ public class InfoService
      */
     @Autowired
     private SystemInfo systemInfo;
-
     /**
-     * Autowired UtilitiesComponent object
-     * Used for various utility functions
-     */
-    @Autowired
-    private UtilitiesComponent utilitiesComponent;
-
-    /**
-     * Converts frequency to most readable format
+     * 用于将 dto 传送到相应的控制器
      *
-     * @param hertzArray raw frequency array values in hertz for each logical processor
-     * @return String with formatted frequency and postfix
+     * @return InfoDto filled with server info
      */
-    private String getConvertedFrequency(final long[] hertzArray)
+    public InfoDto getInfo() throws ApplicationNotConfiguredException
     {
-        long totalFrequency = Arrays.stream(hertzArray).sum();
-        long hertz = totalFrequency / hertzArray.length;
-
-        if ((hertz / 1E+6) > 999)
+        if (!Ward.isFirstLaunch())
         {
-            return (Math.round((hertz / 1E+9) * 10.0) / 10.0) + " GHz";
+            InfoDto infoDto = new InfoDto();
+            HardwareAbstractionLayer hardware = systemInfo.getHardware();
+            //cpu信息
+            infoDto.setProcessor(getProcessor(hardware));
+            //内存信息
+            infoDto.setMachine(getMachine(hardware));
+            //gpu信息
+            infoDto.setGraphics(getGraphics(hardware));
+            //存储信息
+            infoDto.setStorage(getStorage(hardware));
+            //硬盘信息
+            infoDto.setHardDisks(getHardDisk(hardware));
+            //网络信息
+            infoDto.setNetworks(getNetwork(hardware));
+
+            return infoDto;
         }
         else
         {
-            return Math.round(hertz / 1E+6) + " MHz";
+            throw new ApplicationNotConfiguredException();
         }
     }
 
-    /**
-     * Converts capacity to most readable format
-     *
-     * @param bits raw capacity value in bits
-     * @return String with formatted capacity and postfix
-     */
-    private String getConvertedCapacity(final long bits)
-    {
-        DecimalFormat df = new DecimalFormat("#.##"); // 最多保留两位小数，并去掉末尾的0
-        df.setDecimalSeparatorAlwaysShown(false); // 不显示多余的小数点
-
-        if ((bits / 1.049E+6) > 999) {
-            if ((bits / 1.074E+9) > 999) {
-                double value = Math.ceil((bits / 1.1E+12) * 10.0) / 10.0;
-                return df.format(value) + " TB";
-            } else {
-                long value = (long) Math.ceil(bits / 1.074E+9);
-                return df.format(value) + " GB";
-            }
-        } else {
-            long value = (long) Math.ceil(bits / 1.049E+6);
-            return df.format(value) + " MB";
-        }
-    }
 
     /**
      * 读取cpu信息
@@ -212,7 +191,11 @@ public class InfoService
         return graphicsDto;
     }
 
-
+    /**
+     * 提取[]中的内容
+     *
+     * @return GraphicsDto with filled fields
+     */
     public  String extractFirstOrSelf(String input) {
         int start = input.indexOf('[');
         int end = input.indexOf(']');
@@ -261,42 +244,48 @@ public class InfoService
 
         hwDiskStores.forEach(hwDiskStore -> {
             HardDiskDto hardDiskDto = new HardDiskDto();
+            //硬盘名称
             hardDiskDto.setName(hwDiskStore.getName());
-            hardDiskDto.setTemp(hwDiskStore.getModel());
+            //硬盘型号
+            hardDiskDto.setModel(hwDiskStore.getModel());
+            //硬盘序列号
+            hardDiskDto.setSerial(hwDiskStore.getSerial());
+            //硬盘总大小
             hardDiskDto.setTotal(getConvertedCapacity(hwDiskStore.getSize()));
-            hardDiskDto.setReadAndWrite(String.valueOf(hwDiskStore.getReads()) + String.valueOf(hwDiskStore.getWrites()));
+            //硬盘读取
+            hardDiskDto.setRead(getConvertedSize(hwDiskStore.getReads()));
+            //硬盘写入
+            hardDiskDto.setWrite(getConvertedSize(hwDiskStore.getWrites()));
+            //硬盘温度
+            hardDiskDto.setTemp(hwDiskStore.getPartitions().get(0).getName());
             hardDiskDtos.add(hardDiskDto);
         });
         return hardDiskDtos;
     }
     /**
-     * Used to deliver dto to corresponding controller
+     * 读取网络信息
      *
-     * @return InfoDto filled with server info
+     * @return GraphicsDto with filled fields
      */
-    public InfoDto getInfo() throws ApplicationNotConfiguredException
+    private List<NetworkDto> getNetwork(HardwareAbstractionLayer hardware)
     {
-        if (!Ward.isFirstLaunch())
-        {
-            InfoDto infoDto = new InfoDto();
-            HardwareAbstractionLayer hardware = systemInfo.getHardware();
-            //cpu信息
-            infoDto.setProcessor(getProcessor(hardware));
-            //内存信息
-            infoDto.setMachine(getMachine(hardware));
-            //gpu信息
-            infoDto.setGraphics(getGraphics(hardware));
-            //存储信息
-            infoDto.setStorage(getStorage(hardware));
-            //存储信息
-            infoDto.setHardDisks(getHardDisk(hardware));
-            return infoDto;
-        }
-        else
-        {
-            throw new ApplicationNotConfiguredException();
-        }
+        List<NetworkDto> networkDtos = new ArrayList<>();
+        List<NetworkIF> networkIFs = hardware.getNetworkIFs();
+
+        networkIFs.forEach(networkIF -> {
+            NetworkDto networkDto = new NetworkDto();
+            networkDto.setName(networkIF.getName());
+            networkDto.setDisplayName(networkIF.getDisplayName());
+            networkDto.setMacaddr(networkIF.getMacaddr());
+            networkDto.setIPv4addr(networkIF.getIPv4addr());
+            networkDto.setIPv6addr(networkIF.getIPv6addr());
+            networkDto.setDownload(getConvertedSize(networkIF.getBytesRecv()));
+            networkDto.setUpload(getConvertedSize(networkIF.getBytesSent()));
+            networkDtos.add(networkDto);
+        });
+        return networkDtos;
     }
+
 
     /**
      * cpu占用
@@ -347,7 +336,7 @@ public class InfoService
     }
 
     /**
-     * 存储空间总空间
+     * 存储空间总空间占用
      *
      * @return int that display storage usage
      */
@@ -507,5 +496,93 @@ public class InfoService
         return ramFrequency;
     }
 
+    /**
+     * 将频率转换为最易读的格式
+     *
+     * @param hertzArray raw frequency array values in hertz for each logical processor
+     * @return String with formatted frequency and postfix
+     */
+    private String getConvertedFrequency(final long[] hertzArray)
+    {
+        long totalFrequency = Arrays.stream(hertzArray).sum();
+        long hertz = totalFrequency / hertzArray.length;
 
+        if ((hertz / 1E+6) > 999)
+        {
+            return (Math.round((hertz / 1E+9) * 10.0) / 10.0) + " GHz";
+        }
+        else
+        {
+            return Math.round(hertz / 1E+6) + " MHz";
+        }
+    }
+
+    /**
+     * 将容量转换为最易读的格式
+     *
+     * @param bits raw capacity value in bits
+     * @return String with formatted capacity and postfix
+     */
+    private String getConvertedCapacity(final long bits)
+    {
+        DecimalFormat df = new DecimalFormat("#.##"); // 最多保留两位小数，并去掉末尾的0
+        df.setDecimalSeparatorAlwaysShown(false); // 不显示多余的小数点
+
+        if ((bits / 1.049E+6) > 999) {
+            if ((bits / 1.074E+9) > 999) {
+                double value = Math.ceil((bits / 1.1E+12) * 10.0) / 10.0;
+                return df.format(value) + " TB";
+            } else {
+                long value = (long) Math.ceil(bits / 1.074E+9);
+                return df.format(value) + " GB";
+            }
+        } else {
+            long value = (long) Math.ceil(bits / 1.049E+6);
+            return df.format(value) + " MB";
+        }
+    }
+
+    /**
+     * 将字节数转换为最易读的格式
+     *
+     * @param bytes raw byte value
+     * @return String with formatted size and postfix (e.g., "1.5 KB", "2.3 GB")
+     */
+    private String getConvertedSize(final long bytes) {
+        DecimalFormat df = new DecimalFormat("#.##"); // 最多保留两位小数，并去掉末尾的0
+        df.setDecimalSeparatorAlwaysShown(false); // 不显示多余的小数点
+
+        // 定义字节单位的阈值 (基于 1024)
+        final double KB = 1024.0;
+        final double MB = KB * 1024.0; // 1,048,576
+        final double GB = MB * 1024.0; // 1,073,741,824
+        final double TB = GB * 1024.0; // 1,099,511,627,776
+        final double PB = TB * 1024.0; // 1,125,899,906,842,624
+
+        // 根据字节数大小选择合适的单位
+        if (bytes < KB) {
+            // 小于 1KB，直接显示字节
+            return bytes + " B";
+        } else if (bytes < MB) {
+            // KB 级别
+            double value = Math.ceil((bytes / KB) * 10.0) / 10.0; // 保留一位小数向上取整
+            return df.format(value) + " KB";
+        } else if (bytes < GB) {
+            // MB 级别
+            double value = Math.ceil((bytes / MB) * 10.0) / 10.0; // 保留一位小数向上取整
+            return df.format(value) + " MB";
+        } else if (bytes < TB) {
+            // GB 级别
+            double value = Math.ceil((bytes / GB) * 10.0) / 10.0; // 保留一位小数向上取整
+            return df.format(value) + " GB";
+        } else if (bytes < PB) {
+            // TB 级别
+            double value = Math.ceil((bytes / TB) * 10.0) / 10.0; // 保留一位小数向上取整
+            return df.format(value) + " TB";
+        } else {
+            // PB 级别及以上
+            double value = Math.ceil((bytes / PB) * 10.0) / 10.0; // 保留一位小数向上取整
+            return df.format(value) + " PB";
+        }
+    }
 }
